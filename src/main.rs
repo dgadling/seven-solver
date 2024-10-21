@@ -9,7 +9,7 @@ use clap::Parser;
 #[command(version, about, long_about=None)]
 pub struct Args {
     /// Where them words at?
-    #[arg(long, default_value = "resources/7x7-words-7.txt")]
+    #[arg(long, default_value = "resources/7x7-word-list.txt")]
     dict_path: String,
 
     #[arg(short = 'w', long, default_value_t = 7)]
@@ -27,5 +27,6 @@ fn main() {
     let b = board::Board::get_todays_board();
     println!("{:?}", b);
 
-    b.find_word(&dict);
+    let words = b.find_words(&dict);
+    println!("Found words? {:?}", words);
 }

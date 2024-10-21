@@ -66,29 +66,19 @@ impl Board {
         Some(self.columns[col][r])
     }
 
-    pub fn find_word(&self, dict: &Dictionary) -> String {
-        println!("Looking for a word");
-        for col in 0..6 {
-            println!(
-                "Starting @ {} found {}",
-                col,
-                self.find_word_starting_from(col, dict)
-            );
+    pub fn find_words(&self, dict: &Dictionary) -> Vec<String> {
+        // First, do we currently have a word?
+        let mut curr_letters = (0..6)
+            .map(|c| self.get(c, 0).unwrap())
+            .collect::<Vec<char>>();
+        curr_letters.sort();
+        let potential_word = String::from_iter(curr_letters);
+
+        let made_words = dict.make_words_from(&potential_word);
+        if made_words.is_none() {
+            return vec![];
         }
 
-        "I'll find something to put here".to_string()
-    }
-
-    fn find_word_starting_from(&self, col: usize, dict: &Dictionary) -> Option<String> {
-        let c = self.get(col, 0);
-        if c.is_none() {
-            return None;
-        }
-
-        let c = c.unwrap().to_string();
-        println!("  checking {}", c);
-        if dict.has_path(&c) {
-            println!("Ok, can start with {}", c);
-        }
+        return made_words.unwrap().clone();
     }
 }

@@ -1,12 +1,13 @@
 use crate::Args;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 pub struct Dictionary {
     word_cache: HashSet<String>,
     path_cache: HashSet<String>,
+    hashed: HashMap<String, Vec<String>>,
 }
 
 impl Dictionary {
@@ -14,6 +15,7 @@ impl Dictionary {
         let mut d = Dictionary {
             word_cache: HashSet::new(),
             path_cache: HashSet::new(),
+            hashed: HashMap::new(),
         };
 
         if !args.quiet {
@@ -50,13 +52,22 @@ impl Dictionary {
 
         bar.set_message("Populating caches");
 
-        words.iter().for_each(|word|{
+        words.iter().for_each(|word| {
             for l in 2..=word.len() {
                 let mut prefix = String::with_capacity(l);
                 prefix.push_str(&word[0..l]);
                 d.path_cache.insert(prefix);
             }
             d.word_cache.insert(word.clone());
+
+            let mut h_key_parts = word.chars().collect::<Vec<char>>();
+            h_key_parts.sort();
+            let h_key = String::from_iter(h_key_parts);
+
+            d.hashed
+                .entry(h_key)
+                .and_modify(|w| w.push(word.to_string()))
+                .or_insert(vec![word.to_string()]);
             bar.inc(1);
         });
         bar.finish();
@@ -72,5 +83,9 @@ impl Dictionary {
     pub fn is_word(&self, prefix: &str) -> bool {
         let has = self.word_cache.get(prefix);
         has.is_some()
+    }
+
+    pub fn make_words_from(&self, letters: &str) -> Option<&Vec<String>> {
+        self.hashed.get(letters)
     }
 }
