@@ -23,10 +23,10 @@ pub struct Args {
 fn main() {
     let args = Args::parse();
 
-    let dict = dictionary::Dictionary::new(&args);
     let b = board::Board::get_todays_board();
     println!("{:?}", b);
 
+    let dict = dictionary::Dictionary::new(&args);
     let words = b.find_words(&dict);
     println!("Found words? {:?}", words);
 }
