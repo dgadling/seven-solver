@@ -23,7 +23,14 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "lmao")
+        for r in 0..7 {
+            write!(f, " ").unwrap();
+            for c in 0..7 {
+                write!(f, "{}", self.get(c, r).unwrap_or(' ')).unwrap();
+            }
+            write!(f, "\n").unwrap();
+        }
+        Ok(())
     }
 }
 

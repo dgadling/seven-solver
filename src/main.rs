@@ -67,7 +67,7 @@ fn main() {
             let dict = dictionary::Dictionary::new(&s.dict_path, s.min_word_length);
 
             let mut b = fetch(&s.date);
-            println!("{:?}", b);
+            println!("Our board\n---------\n{}", b);
 
             let words = b.find_words(&dict);
             println!("Found words? {:?}", words);
