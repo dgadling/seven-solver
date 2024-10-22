@@ -36,41 +36,46 @@ impl Dictionary {
         d
     }
 
-    pub fn words_from(&self, characters: &str) -> Vec<String> {
-        let cleaned = characters.replace("*", "?");
-        let variants = cleaned.chars().permutations(self.word_length);
+    // Technically could make these two a trait or enum or something, idk.
+    // Having the finder variable below be a little ugly is OK for now
+    fn find_with_glob(&self, chars: Vec<char>) -> Vec<String> {
+        let glob = String::from_iter(chars);
 
-        if cleaned.contains("?") {
-            variants
-                // .progress_count(5040) // 7! = 5,040
-                .map(|chars| {
-                    let glob = String::from_iter(chars);
-                    self.words
-                        .iter()
-                        .filter(|w| glob_match(&glob, w))
-                        .map(|s| s.to_string())
-                        .collect::<Vec<String>>()
-                })
-                .flatten()
-                .collect::<HashSet<String>>()
-                .into_iter()
-                .collect::<Vec<String>>()
+        self.words
+            .iter()
+            .filter(|w| glob_match(&glob, w))
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    }
+
+    fn find_plain(&self, chars: Vec<char>) -> Vec<String> {
+        let s = String::from_iter(chars);
+        if self.words.contains(&s) {
+            vec![s]
         } else {
-            // NOTE: No progress bar here because it's essentially instant
-            variants
-                .map(|chars| {
-                    let s = String::from_iter(chars);
-                    if self.words.contains(&s) {
-                        Some(s)
-                    } else {
-                        None
-                    }
-                })
-                .flatten()
-                .collect::<HashSet<String>>()
-                .into_iter()
-                .collect::<Vec<String>>()
+            vec![]
         }
+    }
+
+    pub fn words_from(&self, characters: &str) -> Vec<String> {
+        let finder: fn(&Dictionary, Vec<char>) -> Vec<String>;
+
+        let glob_swapped = characters.replace("*", "?");
+
+        if glob_swapped.contains("?") {
+            finder = Dictionary::find_with_glob;
+        } else {
+            finder = Dictionary::find_plain;
+        }
+
+        glob_swapped
+            .chars()
+            .permutations(self.word_length)
+            .map(|chars| finder(self, chars))
+            .flatten()
+            .collect::<HashSet<String>>()
+            .into_iter()
+            .collect::<Vec<String>>()
     }
 }
 
