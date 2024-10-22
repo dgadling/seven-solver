@@ -1,4 +1,3 @@
-use crate::Args;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -11,32 +10,32 @@ pub struct Dictionary {
 }
 
 impl Dictionary {
-    pub fn new(args: &Args) -> Self {
+    pub fn new(dict_path: &str, min_word_length: usize, quiet: bool) -> Self {
         let mut d = Dictionary {
             word_cache: HashSet::new(),
             path_cache: HashSet::new(),
             hashed: HashMap::new(),
         };
 
-        if !args.quiet {
-            println!("Reading words from {}", &args.dict_path);
+        if !quiet {
+            println!("Reading words from {}", &dict_path);
         }
 
         // NOTE: The only reason we're doing this in two steps is so that we can
         // have the ProgressBar. If we ever decide we don't want that this can
         // all happen with one long chain.
         let words =
-            BufReader::new(File::open(&args.dict_path).unwrap_or_else(|e| {
-                panic!("Couldn't read word list from {}: {}", &args.dict_path, e)
+            BufReader::new(File::open(&dict_path).unwrap_or_else(|e| {
+                panic!("Couldn't read word list from {}: {}", &dict_path, e)
             }))
             .lines()
             .map(|l| l.unwrap())
-            .filter(|w| w.len() >= args.min_word_length)
+            .filter(|w| w.len() >= min_word_length)
             .collect::<Vec<String>>();
 
         let bar: ProgressBar;
 
-        if args.quiet {
+        if quiet {
             bar = ProgressBar::hidden();
         } else {
             bar = ProgressBar::new(words.len() as u64);
