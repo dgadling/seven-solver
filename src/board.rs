@@ -6,7 +6,7 @@ use std::fs::File;
 
 use crate::dictionary::Dictionary;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Word {
     path: [(usize, usize); 7],
     word: String,
@@ -17,6 +17,8 @@ pub struct Board {
     columns: [[char; 7]; 7],
     column_bottom: [usize; 7],
     date: String,
+    words: Vec<Word>,
+    score: u32,
 }
 
 impl fmt::Display for Board {
@@ -57,6 +59,8 @@ impl Board {
             columns,
             column_bottom: [0, 0, 0, 0, 0, 0, 0],
             date: target_date.to_string(),
+            words: vec![],
+            score: 700
         };
 
         let out_f = File::create(target).unwrap();
