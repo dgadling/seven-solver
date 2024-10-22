@@ -1,90 +1,96 @@
-use indicatif::{ProgressBar, ProgressStyle};
-use std::collections::{HashMap, HashSet};
+use fast_glob::glob_match;
+//use indicatif::{ProgressBar, ProgressIterator, ProgressStyle};
+use itertools::Itertools;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 pub struct Dictionary {
-    word_cache: HashSet<String>,
-    path_cache: HashSet<String>,
-    hashed: HashMap<String, Vec<String>>,
+    words: HashSet<String>,
+    word_length: usize,
 }
 
 impl Dictionary {
-    pub fn new(dict_path: &str, min_word_length: usize, quiet: bool) -> Self {
-        let mut d = Dictionary {
-            word_cache: HashSet::new(),
-            path_cache: HashSet::new(),
-            hashed: HashMap::new(),
-        };
-
-        if !quiet {
-            println!("Reading words from {}", &dict_path);
-        }
-
+    pub fn new(dict_path: &str, word_length: usize) -> Self {
         // NOTE: The only reason we're doing this in two steps is so that we can
         // have the ProgressBar. If we ever decide we don't want that this can
         // all happen with one long chain.
-        let words =
-            BufReader::new(File::open(&dict_path).unwrap_or_else(|e| {
-                panic!("Couldn't read word list from {}: {}", &dict_path, e)
-            }))
-            .lines()
-            .map(|l| l.unwrap())
-            .filter(|w| w.len() >= min_word_length)
-            .collect::<Vec<String>>();
+        let words = BufReader::new(
+            File::open(&dict_path)
+                .unwrap_or_else(|e| panic!("Couldn't read word list from {}: {}", &dict_path, e)),
+        )
+        .lines()
+        .map(|l| l.unwrap())
+        .filter(|w| w.len() >= word_length)
+        .collect::<Vec<String>>();
 
-        let bar: ProgressBar;
-
-        if quiet {
-            bar = ProgressBar::hidden();
-        } else {
-            bar = ProgressBar::new(words.len() as u64);
-        }
-
-        bar.set_style(
-            ProgressStyle::with_template(
-                "{msg} {elapsed} {wide_bar:.blue} {human_pos:>}/{human_len}",
-            )
-            .unwrap()
-            .progress_chars("-> "),
-        );
-
-        bar.set_message("Populating caches");
+        let mut d = Dictionary {
+            words: HashSet::with_capacity(words.len()),
+            word_length,
+        };
 
         words.iter().for_each(|word| {
-            for l in 2..=word.len() {
-                let mut prefix = String::with_capacity(l);
-                prefix.push_str(&word[0..l]);
-                d.path_cache.insert(prefix);
-            }
-            d.word_cache.insert(word.clone());
-
-            let mut h_key_parts = word.chars().collect::<Vec<char>>();
-            h_key_parts.sort();
-            let h_key = String::from_iter(h_key_parts);
-
-            d.hashed
-                .entry(h_key)
-                .and_modify(|w| w.push(word.to_string()))
-                .or_insert(vec![word.to_string()]);
-            bar.inc(1);
+            d.words.insert(word.to_string());
         });
-        bar.finish();
 
         d
     }
 
-    pub fn has_path(&self, prefix: &str) -> bool {
-        let has = self.path_cache.get(prefix);
-        has.is_some()
+    pub fn words_from(&self, characters: &str) -> Vec<String> {
+        let cleaned = characters.replace("*", "?");
+        let variants = cleaned.chars().permutations(self.word_length);
+
+        if cleaned.contains("?") {
+            variants
+                // .progress_count(5040) // 7! = 5,040
+                .map(|chars| {
+                    let glob = String::from_iter(chars);
+                    self.words
+                        .iter()
+                        .filter(|w| glob_match(&glob, w))
+                        .map(|s| s.to_string())
+                        .collect::<Vec<String>>()
+                })
+                .flatten()
+                .collect::<HashSet<String>>()
+                .into_iter()
+                .collect::<Vec<String>>()
+        } else {
+            // NOTE: No progress bar here because it's essentially instant
+            variants
+                .map(|chars| {
+                    let s = String::from_iter(chars);
+                    if self.words.contains(&s) {
+                        Some(s)
+                    } else {
+                        None
+                    }
+                })
+                .flatten()
+                .collect::<HashSet<String>>()
+                .into_iter()
+                .collect::<Vec<String>>()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_letters_only() {
+        let d = Dictionary::new("resources/7x7-word-list-sevens-only.txt", 7);
+        let input_letters = "csiplek";
+
+        assert_eq!(d.words_from(input_letters), vec!["pickles"]);
     }
 
-    pub fn is_word(&self, prefix: &str) -> bool {
-        let has = self.word_cache.get(prefix);
-        has.is_some()
-    }
+    #[test]
+    fn test_one_wildcard() {
+        let d = Dictionary::new("resources/7x7-word-list-sevens-only.txt", 7);
+        let input_letters = "csipl?k";
 
-    pub fn make_words_from(&self, letters: &str) -> Option<&Vec<String>> {
-        self.hashed.get(letters)
+        assert_eq!(d.words_from(input_letters), vec!["pickles"]);
     }
 }

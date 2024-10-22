@@ -64,8 +64,9 @@ fn main() {
             _ = fetch(&when);
         }
         Commands::Solve(s) => {
-            let b = fetch(&s.date);
-            let dict = dictionary::Dictionary::new(&s.dict_path, s.min_word_length, s.quiet);
+            let dict = dictionary::Dictionary::new(&s.dict_path, s.min_word_length);
+
+            let mut b = fetch(&s.date);
             println!("{:?}", b);
 
             let words = b.find_words(&dict);

@@ -60,7 +60,7 @@ impl Board {
             column_bottom: [0, 0, 0, 0, 0, 0, 0],
             date: target_date.to_string(),
             words: vec![],
-            score: 700
+            score: 700,
         };
 
         let out_f = File::create(target).unwrap();
@@ -76,19 +76,11 @@ impl Board {
         Some(self.columns[col][r])
     }
 
-    pub fn find_words(&self, dict: &Dictionary) -> Vec<String> {
+    pub fn find_words(&mut self, dict: &Dictionary) -> Vec<String> {
         // First, do we currently have a word at the bottom?
-        let mut curr_letters = (0..7)
-            .map(|c| self.get(c, 0).unwrap())
-            .collect::<Vec<char>>();
-        curr_letters.sort();
-        let potential_word = String::from_iter(curr_letters);
+        let curr_letters = (0..7).map(|c| self.get(c, 0).unwrap());
 
-        let made_words = dict.make_words_from(&potential_word);
-        if made_words.is_none() {
-            return vec![];
-        }
-
-        return made_words.unwrap().clone();
+        let curr_string = String::from_iter(curr_letters);
+        dict.words_from(&curr_string)
     }
 }

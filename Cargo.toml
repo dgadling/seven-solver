@@ -6,7 +6,9 @@ edition = "2021"
 [dependencies]
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive"] }
+fast-glob = "0.4"
 indicatif = { version = "0.17", features = ["improved_unicode"] }
+itertools = "0.13"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
