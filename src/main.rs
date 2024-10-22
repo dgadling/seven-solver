@@ -23,7 +23,8 @@ pub struct Args {
 fn main() {
     let args = Args::parse();
 
-    let b = board::Board::get_todays_board();
+    // let b = board::Board::get_todays_board();
+    let b = board::Board::get_board_for("20241020");
     println!("{:?}", b);
 
     let dict = dictionary::Dictionary::new(&args);

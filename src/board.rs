@@ -6,6 +6,12 @@ use std::fs::File;
 
 use crate::dictionary::Dictionary;
 
+#[derive(Debug)]
+pub struct Word {
+    path: [(usize, usize); 7],
+    word: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Board {
     columns: [[char; 7]; 7],
@@ -22,10 +28,10 @@ impl fmt::Display for Board {
 impl Board {
     pub fn get_todays_board() -> Self {
         let today = Local::now().format("%Y%m%d").to_string();
-        Self::get_board_for(today)
+        Self::get_board_for(&today)
     }
 
-    pub fn get_board_for(target_date: String) -> Self {
+    pub fn get_board_for(target_date: &str) -> Self {
         let target = format!("boards/{}.json", target_date);
         let target_f = std::path::Path::new(&target);
         if target_f.exists() {
@@ -50,7 +56,7 @@ impl Board {
         let b = Board {
             columns,
             column_bottom: [0, 0, 0, 0, 0, 0, 0],
-            date: target_date,
+            date: target_date.to_string(),
         };
 
         let out_f = File::create(target).unwrap();
@@ -67,8 +73,8 @@ impl Board {
     }
 
     pub fn find_words(&self, dict: &Dictionary) -> Vec<String> {
-        // First, do we currently have a word?
-        let mut curr_letters = (0..6)
+        // First, do we currently have a word at the bottom?
+        let mut curr_letters = (0..7)
             .map(|c| self.get(c, 0).unwrap())
             .collect::<Vec<char>>();
         curr_letters.sort();
